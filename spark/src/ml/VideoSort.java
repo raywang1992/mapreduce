@@ -22,7 +22,7 @@ public class VideoSort {
 
         String inputDataPath = args[0],outputDataPath = args[1];
         SparkConf conf = new SparkConf();
-        conf.setAppName("Movie Lens Application");
+        conf.setAppName("Video trending Application");
 
         JavaSparkContext sc = new JavaSparkContext(conf);
 
@@ -43,7 +43,7 @@ public class VideoSort {
                     List <String> list_of_videos = Lists.newArrayList(s._2);
 
                     ArrayList<Tuple2<String, java.lang.Double>> results = new ArrayList<Tuple2<String, java.lang.Double>>();
-         
+         	   //find the first two trendings
                    double[] views=new double[2];
                    if(list_of_videos.size()>=2) {
                        for (int i = 0; i < list_of_videos.size(); i++) {
@@ -57,18 +57,19 @@ public class VideoSort {
                            }
                        }
                    }
+		//calculate the percentage of increase
                  double ratiopercent=(views[1]-views[0])/views[0]*100;
                  results.add(new Tuple2<String, java.lang.Double>(id_country, ratiopercent));
                  return results.iterator();
                 }
         ).filter(filterPredicate);
-
+	//map the data into String format
         JavaRDD<String> TTV=toptwoVideos.map(s->{
             String[] CounId=s._1.split("/");
             String de=CounId[0]+" "+CounId[1]+" "+String.format("%.1f",s._2);
             return de;
         });
-
+	//use the SecondSort method to define two keys
         JavaPairRDD<SecondSortKey,String> pairRDD=TTV.mapToPair(new PairFunction<String, SecondSortKey, String>() {
             public Tuple2<SecondSortKey, String> call(String t) throws Exception {
                               String[] split = t.split(" ");
@@ -79,7 +80,9 @@ public class VideoSort {
                                return new Tuple2<SecondSortKey, String>(ssk, t);
                            }
        });
+	//sort the data using second sort key
         JavaPairRDD<SecondSortKey, String> sortByKeyRDD =pairRDD.sortByKey(false);
+	//map the data into output format
         JavaRDD<String> mapRDD = sortByKeyRDD.map(new Function<Tuple2<SecondSortKey,String>, String>() {
             public String call(Tuple2<SecondSortKey, String> v1) throws Exception {
 
